@@ -1,0 +1,170 @@
+@import './base.css';
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Couleurs et fonds personnalisés ===== */
+.bg-orvanta {
+  background: radial-gradient(circle at center, #0a0e17 0%, #050811 100%);
+  position: relative;
+}
+
+.bg-orvanta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(0, 255, 234, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 234, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orvanta-text {
+  background-color: #260968; /* Garder l'ancienne couleur pour le texte si besoin */
+}
+
+/* ===== Scrollbars cachées globalement ===== */
+::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  -ms-overflow-style: none;  /* IE & Edge */
+  scrollbar-width: none;     /* Firefox */
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ===== Layout Next.js ===== */
+#__next {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Polices personnalisées ===== */
+.font-orbitron {
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* ===== Animations pour le fond futuriste ===== */
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+@keyframes powerOnOff {
+  0% {
+    opacity: 0;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0);
+  }
+  10% {
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.8), 
+                 0 0 20px rgba(168, 85, 247, 0.6),
+                 0 0 30px rgba(168, 85, 247, 0.4);
+  }
+  20% {
+    text-shadow: none;
+  }
+  30% {
+    text-shadow: 0 0 10px rgba(168, 85, 247, 0.8), 
+                 0 0 20px rgba(168, 85, 247, 0.6);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(168, 85, 247, 0.8);
+  }
+}
+
+.animate-powerOnOff {
+  animation: powerOnOff 2s ease-in-out infinite alternate;
+}
+
+.font-orbitron {
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.2em;
+}
+
+.calculator-display {
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+  min-height: 2rem;
+}
+
+/* Hide number input spinner for Chrome, Safari, Edge */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinner {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #rapport-z-content, #rapport-z-content * {
+    visibility: visible;
+  }
+  #rapport-z-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+  }
+}
+
+/* Animation de défilement de droite vers gauche - INFINIE */
+@keyframes marquee-left {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-220%);
+  }
+}
+
+.animate-marquee-left {
+  display: flex;
+  animation: marquee-left 30s linear infinite;
+}
+
+/* Pause au survol (optionnel mais classe) */
+.animate-marquee-left:hover {
+  animation-play-state: paused;
+}
+
+/* Animation pour le rafraîchissement */
+@keyframes highlightUpdate {
+  0% { background-color: rgba(34, 197, 94, 0.1); }
+  100% { background-color: transparent; }
+}
+
+.updated-row {
+  animation: highlightUpdate 2s ease-in-out;
+}
+
+/* Styles pour masquer la scrollbar mais garder la fonctionnalité */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Style pour un défilement fluide */
+.scrollbar-hide {
+  scroll-behavior: smooth;
+}

@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Activation SmartCash</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: 'JetBrains Mono', monospace;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: radial-gradient(circle at center, #0a0e17 0%, #050811 100%);
+        color: #00ffea;
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* Effets de fond cyber */
+      .cyber-grid {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background-image: 
+          linear-gradient(rgba(0, 255, 234, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 255, 234, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        animation: gridMove 20s linear infinite;
+        pointer-events: none;
+      }
+
+      .cyber-scan {
+        position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+        background: linear-gradient(90deg, transparent, #00ffea, transparent);
+        animation: scan 4s linear infinite;
+        box-shadow: 0 0 10px #00ffea;
+        pointer-events: none;
+      }
+
+      .card {
+        width: 420px; padding: 40px 35px; border-radius: 20px;
+        background: rgba(10, 14, 23, 0.95); backdrop-filter: blur(15px);
+        border: 1px solid rgba(0, 255, 234, 0.3);
+        box-shadow: 0 0 50px rgba(0, 255, 234, 0.2),
+                    inset 0 0 20px rgba(0, 255, 234, 0.1);
+        text-align: center; position: relative; z-index: 10;
+      }
+
+      h3 {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 24px; font-weight: 700;
+        background: linear-gradient(90deg, #00ffea, #7c3aed);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px;
+      }
+
+      .subtitle { font-size: 14px; color: rgba(0, 255, 234, 0.8); margin-bottom: 25px; line-height: 1.4; }
+
+      .input-container { position: relative; margin: 20px 0; }
+
+      .input-field {
+        width: 100%; padding: 15px 20px; border-radius: 12px;
+        border: 1px solid rgba(0, 255, 234, 0.3); background: rgba(5, 8, 17, 0.8);
+        color: #00ffea; font-family: 'JetBrains Mono', monospace; font-size: 14px;
+        letter-spacing: 1px; transition: all 0.3s ease;
+      }
+
+      .input-field:focus {
+        outline: none; border-color: #00ffea; box-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+      }
+
+      .input-field::placeholder { color: rgba(0, 255, 234, 0.5); }
+
+      .button-group { display: flex; gap: 15px; margin-top: 25px; }
+
+      .btn {
+        flex: 1; padding: 14px 20px; border: none; border-radius: 12px;
+        font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 600;
+        cursor: pointer; transition: all 0.3s ease; text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .btn-confirm { background: linear-gradient(135deg, #00ffea, #0099cc); color: #050811; box-shadow: 0 0 20px rgba(0, 255, 234, 0.3); }
+      .btn-cancel { background: rgba(255, 65, 108, 0.1); color: #ff416c; border: 1px solid rgba(255, 65, 108, 0.3); }
+
+      .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 255, 234, 0.4); }
+      .btn:active { transform: translateY(0); }
+
+      .message { min-height: 20px; margin-top: 15px; font-size: 12px; transition: all 0.3s ease; }
+
+      /* Animations */
+      @keyframes gridMove { 0% { transform: translate(0,0); } 100% { transform: translate(50px,50px); } }
+      @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+    </style>
+  </head>
+  <body>
+    <div class="cyber-grid"></div>
+    <div class="cyber-scan"></div>
+
+    <div class="card">
+      <h3>ACTIVATION REQUISE</h3>
+      <p class="subtitle">Collez le code de confirmation (confidentiel)</p>
+
+      <div class="input-container">
+        <input id="code" type="password" class="input-field" placeholder="SCASH-20**-****-****-****-****-**" />
+      </div>
+
+      <div class="button-group">
+        <button class="btn btn-cancel" id="quit">Quitter</button>
+        <button class="btn btn-confirm" id="ok">Valider</button>
+      </div>
+
+      <div class="message" id="msg"></div>
+    </div>
+
+    <script>
+      // Fonctions pour générer des sons avec l'API Web Audio
+      function playBeep(frequency = 440, duration = 0.1, volume = 0.1) {
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = frequency;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + duration);
+        } catch (error) {
+          console.log('Audio non supporté:', error);
+        }
+      }
+
+      function playSuccessSound() {
+        // Séquence de bips ascendante pour le succès
+        playBeep(523, 0.1, 0.1); // Do
+        setTimeout(() => playBeep(659, 0.1, 0.1), 100); // Mi
+        setTimeout(() => playBeep(784, 0.2, 0.1), 200); // Sol
+      }
+
+      function playErrorSound() {
+        // Séquence de bips descendants pour l'erreur
+        playBeep(784, 0.1, 0.1); // Sol
+        setTimeout(() => playBeep(659, 0.1, 0.1), 100); // Mi
+        setTimeout(() => playBeep(523, 0.2, 0.1), 200); // Do
+      }
+
+      function playClickSound() {
+        // Bip court pour les clics
+        playBeep(330, 0.05, 0.05);
+      }
+
+      function playQuitSound() {
+        // Son plus grave pour quitter
+        playBeep(220, 0.2, 0.1);
+      }
+
+      // Son d'ouverture au chargement de la page
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          playBeep(440, 0.3, 0.1);
+        }, 300);
+        
+        // Focus automatique sur le champ de code
+        document.getElementById('code').focus();
+      });
+
+      document.getElementById('ok').addEventListener('click', async () => {
+        playClickSound(); // Son de clic
+        
+        const code = document.getElementById('code').value;
+        const msg = document.getElementById('msg');
+        
+        if (!code) {
+          msg.style.color = '#ff416c';
+          msg.innerText = 'Veuillez saisir le code.';
+          playErrorSound();
+          return;
+        }
+        
+        // Effet visuel de chargement
+        msg.style.color = '#00ffea';
+        msg.innerText = 'Vérification en cours...';
+        
+        try {
+          const res = await window.electron.ipcRenderer.invoke('activation:submit', code);
+          
+          if (res.ok) {
+            playSuccessSound(); // Son de succès
+            msg.style.color = '#00ff88';
+            msg.innerText = 'Activation réussie — l\'application ouvre maintenant...';
+            
+            setTimeout(() => {
+              window.electron.ipcRenderer.send('activation:hide-and-open');
+            }, 1000);
+          } else {
+            playErrorSound(); // Son d'erreur
+            msg.style.color = '#ff416c';
+            if (res.reason === 'empty') msg.innerText = 'Veuillez saisir le code.';
+            else if (res.reason === 'wrong') msg.innerText = 'Code incorrect. Réessayer.';
+            else msg.innerText = 'Erreur activation.';
+          }
+        } catch (error) {
+          console.error('Erreur lors de l\'activation:', error);
+          playErrorSound();
+          msg.style.color = '#ff416c';
+          msg.innerText = 'Erreur de connexion.';
+        }
+      });
+
+      document.getElementById('quit').addEventListener('click', () => {
+        playQuitSound(); // Son de quitter
+        window.electron.ipcRenderer.send('activation:quit');
+      });
+
+      // Son de clic pour le champ de saisie
+      document.getElementById('code').addEventListener('focus', () => {
+        playBeep(330, 0.05, 0.03);
+      });
+
+      // Permettre la validation avec la touche Entrée
+      document.getElementById('code').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('ok').click();
+        }
+      });
+    </script>
+  </body>
+</html>

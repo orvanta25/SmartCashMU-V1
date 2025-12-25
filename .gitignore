@@ -1,0 +1,19 @@
+node_modules
+dist
+out
+.DS_Store
+.eslintcache
+*.log*
+.env.activation
+.env
+
+# Databases (SQLite / Prisma)
+*.db
+*.sqlite
+*.sqlite3
+
+# Prisma local
+prisma/dev.db
+
+# Backups
+data/backups/
