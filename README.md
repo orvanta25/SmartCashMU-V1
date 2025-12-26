@@ -63,3 +63,6 @@ npm run dev:caisse
 
 # Ou les deux ensemble
 npm run sync:all
+
+base de donnée 
+psql -U smartcash_user -d smartcash -h localhost
