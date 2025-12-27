@@ -129,6 +129,7 @@ icon: (
   </svg>
 ),
 subItems: [
+  { name: 'Gestion des Caisses', href: '/dashboard_user/configuration/caisses', roles: ['ADMIN'] },
   { name: 'Balance', href: '/dashboard_user/configuration/balance', roles: ['ADMIN'] },
   { name: 'Imprimante', href: '/dashboard_user/configuration/imprimante', roles: ['ADMIN'] },
   { name: 'Création de facture', href: '/dashboard_user/provider-Invoice/invoice/add', roles: ['ADMIN'] },

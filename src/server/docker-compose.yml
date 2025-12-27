@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: smartcash-postgres
+    environment:
+      POSTGRES_DB: smartcash_central
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - smartcash-network
+
+  sync-server:
+    build: ./server
+    container_name: smartcash-sync-server
+    depends_on:
+      - postgres
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://smartcash_user:toor@localhost:5432/smartcash"
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET}
+      API_KEY_SECRET: ${API_KEY_SECRET}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server/logs:/app/logs
+      - ./server/.env:/app/.env
+    networks:
+      - smartcash-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  smartcash-network:
+    driver: bridge

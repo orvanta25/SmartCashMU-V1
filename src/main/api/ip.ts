@@ -1,13 +1,12 @@
 import { ipcMain } from "electron";
 import os from "os";
-import { PORT } from "../server";
-
+const PORT = 3000; 
 export function IpApi() {
   ipcMain.handle("/ip", async () => {
     const nets = os.networkInterfaces();
     let localIp = "127.0.0.1";
 
-    // Find Wi-Fi or LAN IPv4 address
+    // Cherche l'adresse IPv4 locale
     for (const name of Object.keys(nets)) {
       const netInfo = nets[name];
       if (!netInfo) continue;
@@ -20,6 +19,6 @@ export function IpApi() {
       }
     }
 
-    return `http://${localIp}:${PORT}`;
+    return `http://${localIp}:${PORT}`; // ← utilise maintenant la constante importée
   });
 }

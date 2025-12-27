@@ -1,0 +1,59 @@
+// prisma/schema.local.prisma
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./smartcash.db"
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  CONFLICT
+  ERROR
+}
+
+// Champs de synchronisation à ajouter à chaque modèle
+model BaseSyncFields {
+  syncId       String?    @unique @map("sync_id")
+  lastSyncedAt DateTime?  @map("last_synced_at")
+  syncStatus   SyncStatus @default(PENDING) @map("sync_status")
+  localId      String     @id @default(uuid()) @map("local_id")
+  caisseId     String     @map("caisse_id") // Identifiant de la caisse
+  version      Int        @default(1) // Version optimiste
+  isDeleted    Boolean    @default(false) @map("is_deleted")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+}
+
+// Exemple pour User avec champs de sync
+model User {
+  // Champs de synchronisation
+  ...BaseSyncFields
+  
+  // Champs métier existants
+  nom               String?
+  prenom            String?
+  telephone         String?
+  pin               String            @default("0000")
+  role              UserRole          @default(ADMIN)
+  isActive          Boolean           @default(true)
+  magasinId         String?
+  fondcaisse        Decimal?
+  email             String?
+  entrepriseId      String?
+  
+  // Relations
+  entreprise        Entreprise?       @relation(fields: [entrepriseId], references: [localId])
+  magasin           Magasin?          @relation("UserMagasinEmployees", fields: [magasinId], references: [localId])
+  
+  @@unique([pin, caisseId])
+  @@index([syncId])
+  @@index([syncStatus])
+  @@index([lastSyncedAt])
+}
+
+// Appliquer les mêmes modifications à tous les modèles...

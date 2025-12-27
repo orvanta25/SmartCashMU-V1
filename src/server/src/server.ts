@@ -1,14 +1,15 @@
-import express from "express"
-import { AccController } from "./controller/acc"
-import { AuthController } from "./controller/auth"
+import { createCaisseRoutes } from './api/caisse.routes';
+
+import { AccController } from "../../main/controller/acc"
+import { AuthController } from "../../main/controller/auth"
 import session from "express-session";
-import { UserController } from "./controller/user";
-import {ProduitController} from "./controller/produit";
-import {InventoryController} from "./controller/inventaire";
-import { StockMouvementController } from "./controller/stock-mouvement";
-import { AchatFournisseurController } from "./controller/achat-fournisseur";
-import { CommandeController } from "./controller/commande";
-import { ChargeController } from "./controller/charge";
+import { UserController } from "../../main/controller/user";
+import {ProduitController} from "../../main/controller/produit";
+import {InventoryController} from "../../main/controller/inventaire";
+import { StockMouvementController } from "../../main/controller/stock-mouvement";
+import { AchatFournisseurController } from "../../main/controller/achat-fournisseur";
+import { CommandeController } from "../../main/controller/commande";
+import { ChargeController } from "../../main/controller/charge";
 const cors = require("cors")
 export const PORT = 5000
 const serverHttp = express()
@@ -23,7 +24,7 @@ serverHttp.use(express.json())
 
 serverHttp.use(session({
   name: "connect.sid",
-  secret: "TON_SECRET",
+  secret: "3f8a9c2e-7b1d-4f56-9d2c-1e7a5b6c9g56",
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -51,7 +52,8 @@ export function Server(prisma) {
   AchatFournisseurController(serverHttp,prisma)
   CommandeController(serverHttp,prisma)
   ChargeController(serverHttp,prisma)
-  
+   serverHttp.use('/api/caisses', createCaisseRoutes(prisma));
+
   serverHttp.listen(PORT, () => {
     console.log("server listening on http://localhost:" + PORT)
   })

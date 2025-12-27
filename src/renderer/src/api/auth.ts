@@ -1,6 +1,9 @@
 import { UserProfile } from "./user";
 import {Entreprise} from '../api/entreprise'
 import { CreateEntrepriseDto } from "@renderer/types/auth";
+import axios from 'axios'
+
+const API_URL = 'http://localhost:3000/api'
 
 export interface LoginRequest {
   pin: string;

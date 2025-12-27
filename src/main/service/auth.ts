@@ -18,6 +18,7 @@ async function isSystemInitialized(prisma) {
 }
 
 // Fonction pour créer l'admin bootstrap (seulement si système vide)
+// Fonction pour créer l'admin bootstrap (seulement si système vide)
 async function createBootstrapAdmin(prisma, ses) {
     // Vérifier une seconde fois qu'il n'y a aucun utilisateur
     const existingUsers = await prisma.user.findMany();
@@ -25,7 +26,7 @@ async function createBootstrapAdmin(prisma, ses) {
         throw new Error("Le système est déjà initialisé");
     }
 
-    // Créer une entreprise par défaut
+    // Créer une entreprise par défaut avec TOUS les champs obligatoires
     const entreprise = await prisma.entreprise.create({
         data: {
             nom: 'Votre Entreprise',
@@ -33,11 +34,19 @@ async function createBootstrapAdmin(prisma, ses) {
             email: '',
             pays: 'tunisie',
             type: EntrepriseType.FOURNISSEUR,
-            denomination: "Entreprise"
+            denomination: "Entreprise",
+            // AJOUTEZ CES CHAMPS OBLIGATOIRES :
+            syncStatus: 'PENDING',
+            caisseId: 'default-caisse',
+            version: 1,
+            isDeleted: false,
+            // Champs avec valeurs par défaut mais on les spécifie explicitement
+            hasEpicerieModule: false,
+            hasRestaurantModule: false
         }
     });
 
-    // Créer l'admin bootstrap avec le flag isBootstrap
+    // Créer l'admin bootstrap avec TOUS les champs obligatoires
     const bootstrapAdmin = await prisma.user.create({
         data: {
             nom: 'Administrateur',
@@ -48,7 +57,18 @@ async function createBootstrapAdmin(prisma, ses) {
             magasinId: null,
             entrepriseId: entreprise.id,
             permissions: '',
-            isBootstrap: true // ← FLAG IMPORTANT
+            isBootstrap: true,
+            // AJOUTEZ CES CHAMPS OBLIGATOIRES :
+            syncStatus: 'PENDING',
+            caisseId: 'default-caisse',
+            version: 1,
+            isDeleted: false,
+            // Champs optionnels mais définis dans le schéma :
+            isActive: true,
+            isDefaultAdmin: false,
+            annule: false,
+            // Champs avec valeurs par défaut
+            fondcaisse: 0
         }
     });
 
@@ -60,7 +80,7 @@ async function createBootstrapAdmin(prisma, ses) {
             prenom: bootstrapAdmin.prenom,
             role: bootstrapAdmin.role
         },
-        isBootstrap: true // Indique au frontend que c'est le premier login
+        isBootstrap: true
     };
 }
 

@@ -6,8 +6,10 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { ensureProvisionalLicense, isActivated, validateActivationCode } from './utils/activation'
 import Api from './api'
 import { RetourApi } from "./api/retour";
+
+
 import dotenv from 'dotenv'
-import { Server } from './server'
+
 dotenv.config()
 
 let PrismaClient: any
@@ -130,9 +132,10 @@ app.whenReady().then(async () => {
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
   const ses = session.fromPartition('persist:id')
-  Server(prisma)
+  //Server(prisma)
   Api(prisma, ses)
   RetourApi(prisma); 
+  
 
   console.log("✅ [MAIN] API initialisées");
   //ensureProvisionalLicense()

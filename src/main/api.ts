@@ -30,8 +30,11 @@ import { setupVariantFamilyApi } from './api/variant-family.api';
 import { setupVariantValueApi } from './api/variant-value.api';
 import { setupProductVariantApi } from './api/product-variant.api';
 import { registerQRRemiseHandlers } from './api/qr-remise.handlers';
+import { CaisseApi } from './api/caisse.api';
+
 
 export default function Api(prisma,ses){
+      console.log('🔧 [API] Initialisation, prisma:', !!prisma);
       UserApi(prisma,ses)
       AuthApi(prisma,ses)
       EntrepriseApi(prisma,ses)
@@ -63,6 +66,6 @@ export default function Api(prisma,ses){
       setupVariantFamilyApi(prisma);
       setupVariantValueApi(prisma);
       setupProductVariantApi(prisma);
-        registerQRRemiseHandlers();
-
+      registerQRRemiseHandlers();
+      CaisseApi(prisma);
 }

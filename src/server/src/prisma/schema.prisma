@@ -1,0 +1,1430 @@
+// server/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+    url      = env("DATABASE_URL")
+
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  CONFLICT
+  ERROR
+}
+
+enum UserRole {
+  ADMIN
+  CAISSIER
+  COMPTABLE
+  GERANT
+  MAGASINIER
+  CHEF_RAYON
+  SERVEUR
+}
+
+enum EntrepriseType {
+  COMMERCANT
+  FOURNISSEUR
+}
+
+model User {
+  id             String   @id @default(uuid())
+  nom            String?
+  prenom         String?
+  telephone      String?
+  pin            String   @default("0000")
+  role           UserRole @default(ADMIN)
+  isActive       Boolean  @default(true)
+  magasinId      String?
+  fondcaisse     Decimal?
+  email          String?
+  entrepriseId   String?
+  isBootstrap    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  permissions    String   @default("")
+  isDefaultAdmin Boolean? @default(false)
+  annule         Boolean  @default(false)
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entreprise        Entreprise?       @relation(fields: [entrepriseId], references: [syncId])
+  magasin           Magasin?          @relation("UserMagasinEmployees", fields: [magasinId], references: [syncId], onDelete: SetNull)
+  magasins          Magasin[]         @relation("UserMagasins")
+  createdCategories Categorie[]       @relation("CategorieCreatedBy")
+  updatedCategories Categorie[]       @relation("CategorieUpdatedBy")
+  printer           Printer?          @relation
+  assignedTables    Table[]           @relation("TableServer")
+  commandes         Commande[]
+  usedTicketRestos  UsedTicketResto[] @relation("UserToUsedTicketResto")
+  retours           Retour[]
+  ventes            Vente[]
+
+  @@unique([pin, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Entreprise {
+  id                  String         @id @default(uuid())
+  nom                 String?
+  denomination        String?
+  matriculeFiscale    String?
+  adresse             String?
+  telephone           String?
+  logo                String?
+  email               String?
+  region              String?
+  ville               String?
+  pays                String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  type                EntrepriseType @default(FOURNISSEUR)
+  hasEpicerieModule   Boolean        @default(false)
+  hasRestaurantModule Boolean        @default(false)
+  secteurActivite     String?
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  User                User[]
+  categories          Categorie[]
+  produits            Produit[]
+  magasins            Magasin[]
+  magasinProduits     MagasinProduit[]
+  accs                Acc[]
+  inventaires         Inventaire[]
+  mouvementStocks     MouvementStock[]
+  typeCharges         TypeCharge[]
+  charges             Charge[]
+  factures            Facture[]
+  ventesFactures      VentesFacture[]
+  achatFournisseurs   AchatFournisseur[]
+  entrees             Entree[]
+  myFactures          MyFacture[]
+  myFactureAdresses   MyFactureAdresse[]
+  myFactureEmails     MyFactureEmail[]
+  myFactureTelephones MyFactureTelephone[]
+  myFactureMobiles    MyFactureMobile[]
+  balanceConfigs      BalanceConfig[]
+  printers            Printer[]
+  tables              Table[]
+  floorPlans          FloorPlan[]
+  commandes           Commande[]
+  ventes              Vente[]
+  remiseQRConfigs     RemiseQRConfig[]
+  ticketrestos        TicketResto[]
+  usedTicketRestos    UsedTicketResto[]
+  fournisseurs        Fournisseur[]
+  clients             Client[]
+  retours             Retour[]
+  retourLignes        RetourLigne[]
+  paiements           Paiement[]
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Categorie {
+  id                String   @id @default(uuid())
+  nom               String
+  showInPos         Boolean  @default(false)
+  isDefaultOperator Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdById       String?
+  updatedById       String?
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  createdBy    User?      @relation("CategorieCreatedBy", fields: [createdById], references: [syncId], onDelete: SetNull)
+  updatedBy    User?      @relation("CategorieUpdatedBy", fields: [updatedById], references: [syncId], onDelete: SetNull)
+  produits     Produit[]
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([nom, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Lot {
+  id        String  @id @default(uuid())
+  quantite  Float
+  price     Decimal
+  produitId String
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  produit Produit @relation(fields: [produitId], references: [syncId])
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Magasin {
+  id              String   @id @default(uuid())
+  nom             String
+  adresse         String?
+  secteurActivite String
+  region          String
+  ville           String
+  pays            String
+  responsableId   String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  responsable          User                  @relation("UserMagasins", fields: [responsableId], references: [syncId], onDelete: Cascade)
+  employees            User[]                @relation("UserMagasinEmployees")
+  magasinProduits      MagasinProduit[]
+  entrepriseId         String?
+  entreprise           Entreprise?           @relation(fields: [entrepriseId], references: [syncId])
+  productVariantStocks ProductVariantStock[]
+
+  @@unique([nom, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model MagasinProduit {
+  id            String   @id @default(uuid())
+  produitId     String
+  magasinId     String
+  quantite      Float
+  stockInitial  Float
+  stockSecurite Float?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  produit      Produit    @relation(fields: [produitId], references: [syncId], onDelete: Cascade)
+  magasin      Magasin    @relation(fields: [magasinId], references: [syncId], onDelete: Cascade)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([produitId, magasinId, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Inventaire {
+  id          String   @id @default(uuid())
+  codeBarre   String
+  designation String
+  quantite    Float
+  responsable String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Acc {
+  id          String   @id @default(uuid())
+  codeBarre   String
+  designation String
+  quantite    Float
+  responsable String
+  remarque    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model MouvementStock {
+  id                String   @id @default(uuid())
+  date              DateTime
+  codeBarre         String
+  designation       String
+  stockInitial      Float
+  stockSecurite     Float?
+  achats            Float
+  ventes            Float
+  acc               Float
+  retour            Float    @default(0)
+  stockFinalTheoric Float
+  stockFinalReal    Float?
+  ecart             Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([date, codeBarre, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model TypeCharge {
+  id        String   @id @default(uuid())
+  nom       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  charges      Charge[]   @relation("ChargeToTypeCharge")
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([nom, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Charge {
+  id                   String    @id @default(uuid())
+  typeChargeId         String
+  montant              Decimal
+  dateEcheance         DateTime
+  datePaiement         DateTime?
+  dateDebutRepartition DateTime
+  dateFinRepartition   DateTime
+  paye                 Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  typeCharge   TypeCharge @relation("ChargeToTypeCharge", fields: [typeChargeId], references: [syncId], onDelete: Restrict)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+enum FactureType {
+  FACTURE
+  BDC
+  DEV
+}
+
+model Facture {
+  id                     String      @id @default(uuid())
+  type                   FactureType
+  num                    String      @unique
+  dateEmission           DateTime    @default(now())
+  dateEcheance           DateTime
+  denominationClient     String
+  matriculeFiscaleClient String?
+  adresseClient          String
+  clientTelephone        String?
+  totalHT                Decimal
+  totalTVA               Decimal
+  timbreFiscal           Decimal?
+  remise                 Decimal?    @default(0)
+  totalNet               Decimal
+  denomination           String
+  matriculeFiscale       String
+  banque                 String
+  rib                    String
+  logo                   String?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  ventesFactures VentesFacture[] @relation("FactureVentes")
+  entrepriseId   String
+  entreprise     Entreprise      @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([num, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model VentesFacture {
+  id          String   @id @default(uuid())
+  factureId   String
+  codeBarre   String
+  designation String
+  puht        Decimal
+  tva         Decimal  @default(0)
+  remise      Decimal  @default(0)
+  quantite    Float
+  totalHT     Decimal
+  totalTTC    Decimal
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  facture      Facture    @relation("FactureVentes", fields: [factureId], references: [syncId], onDelete: Cascade)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model AchatFournisseur {
+  id              String    @id @default(uuid())
+  numeroFacture   String
+  fournisseur     String
+  dateEcheance    DateTime
+  datePaiement    DateTime?
+  pieceJointe     String?
+  montantTotal    Decimal
+  montantComptant Decimal?
+  montantRestant  Decimal?
+  remise          Decimal?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entrees      Entree[]   @relation("AchatFournisseurToEntree")
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Entree {
+  id              String   @id @default(uuid())
+  codeBarre       String
+  designation     String
+  quantite        Float
+  puht            Decimal
+  tva             Decimal
+  prixUnitaireTTC Decimal
+  prixTotalTTC    Decimal
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  achatFournisseurId String?
+  achatFournisseur   AchatFournisseur? @relation("AchatFournisseurToEntree", fields: [achatFournisseurId], references: [syncId], onDelete: SetNull)
+  entrepriseId       String
+  entreprise         Entreprise        @relation(fields: [entrepriseId], references: [syncId])
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model MyFacture {
+  id               String   @id @default(uuid())
+  denomination     String
+  matriculeFiscale String
+  banque           String
+  rib              String
+  logo             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  adresses     MyFactureAdresse[]
+  emails       MyFactureEmail[]
+  telephones   MyFactureTelephone[]
+  mobiles      MyFactureMobile[]
+  entrepriseId String
+  entreprise   Entreprise           @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([denomination, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model MyFactureAdresse {
+  id          String   @id @default(uuid())
+  adresse     String
+  myFactureId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  myFacture    MyFacture  @relation(fields: [myFactureId], references: [syncId], onDelete: Cascade)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([adresse, myFactureId, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model MyFactureEmail {
+  id          String   @id @default(uuid())
+  email       String
+  myFactureId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  myFacture    MyFacture  @relation(fields: [myFactureId], references: [syncId], onDelete: Cascade)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([email, myFactureId, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model MyFactureTelephone {
+  id          String   @id @default(uuid())
+  numTel      String
+  myFactureId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  myFacture    MyFacture  @relation(fields: [myFactureId], references: [syncId], onDelete: Cascade)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([numTel, myFactureId, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model MyFactureMobile {
+  id          String   @id @default(uuid())
+  numMobile   String
+  myFactureId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  myFacture    MyFacture  @relation(fields: [myFactureId], references: [syncId], onDelete: Cascade)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([numMobile, myFactureId, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model BalanceConfig {
+  id                Int      @id @default(autoincrement())
+  barcodeLength     Int
+  balanceCode       String
+  productCodeStart  Int
+  productCodeLength Int
+  priceStart        Int
+  priceLength       Int
+  sellerStart       Int?
+  sellerLength      Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Printer {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  user         User?      @relation(fields: [userId], references: [syncId], onDelete: SetNull)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([name, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Commande {
+  id           String   @id @default(uuid())
+  date         DateTime @default(now())
+  total        Decimal
+  userId       String
+  isWaiting    Boolean  @default(false)
+  tpeAmount    Decimal  @default(0.000)
+  especeAmount Decimal  @default(0.000)
+  ticketAmount Decimal  @default(0.000)
+  ticketNumber String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+  tableId      String?
+  remise       Decimal? @default(0)
+  chequeAmount Decimal  @default(0.000)
+  annule       Boolean  @default(false)
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  user         User       @relation(fields: [userId], references: [syncId], onDelete: Restrict)
+  ventes       Vente[]
+  table        Table?     @relation("TableCommandes", fields: [tableId], references: [syncId], onDelete: SetNull)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+  retours      Retour[]   @relation("CommandeRetours")
+  paiements    Paiement[]
+
+  @@unique([ticketNumber, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Vente {
+  id             String   @id @default(uuid())
+  codeBarre      String
+  designation    String
+  puht           Decimal
+  tva            Decimal  @default(0)
+  remise         Decimal  @default(0)
+  quantite       Float
+  totalHT        Decimal
+  totalTTC       Decimal
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  commandeId     String
+  retourQuantite Float    @default(0)
+  cloturee       Boolean  @default(false)
+  clotureId      String
+  statut         String   @default("PAYEE")
+  caissier       String?
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  ticketsRemise TicketRemiseQR[]
+  commande      Commande         @relation(fields: [commandeId], references: [syncId])
+  entrepriseId  String
+  entreprise    Entreprise       @relation(fields: [entrepriseId], references: [syncId])
+  retourLignes  RetourLigne[]
+  userId        String?
+  user          User?            @relation(fields: [userId], references: [syncId])
+  paiements     Paiement[]
+
+  @@index([caissier])
+  @@index([statut])
+  @@index([createdAt])
+  @@index([cloturee])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Retour {
+  id          String   @id @default(cuid())
+  commandeId  String
+  totalRetour Float
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  commande     Commande      @relation("CommandeRetours", fields: [commandeId], references: [syncId])
+  entrepriseId String
+  entreprise   Entreprise    @relation(fields: [entrepriseId], references: [syncId])
+  user         User          @relation(fields: [userId], references: [syncId])
+  lignes       RetourLigne[]
+
+  @@index([commandeId])
+  @@index([entrepriseId])
+  @@index([userId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model RetourLigne {
+  id        String   @id @default(uuid())
+  venteId   String
+  quantite  Float
+  montant   Decimal
+  createdAt DateTime @default(now())
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  vente        Vente      @relation(fields: [venteId], references: [syncId], onDelete: Cascade)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+  retour       Retour?    @relation(fields: [retourId], references: [syncId], onDelete: Cascade)
+  retourId     String?
+
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Table {
+  id          String   @id @default(uuid())
+  number      String
+  serverId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  floorPlanId String?
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  server       User?      @relation("TableServer", fields: [serverId], references: [syncId], onDelete: SetNull)
+  commandes    Commande[] @relation("TableCommandes")
+  floorPlan    FloorPlan? @relation("FloorPlanTables", fields: [floorPlanId], references: [syncId], onDelete: SetNull)
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([number, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model FloorPlan {
+  id        String   @id @default(uuid())
+  name      String
+  elements  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  tables       Table[]    @relation("FloorPlanTables")
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([name, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model TicketResto {
+  id          String   @id @default(uuid())
+  fournisseur String
+  codeInterne String
+  pourcentage Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+
+  @@unique([codeInterne, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model UsedTicketResto {
+  id        String   @id @default(uuid())
+  codeBarre String   @unique
+  createdAt DateTime @default(now())
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId], onDelete: Cascade)
+  userId       String?
+  user         User?      @relation("UserToUsedTicketResto", fields: [userId], references: [syncId], onDelete: SetNull)
+
+  @@unique([codeBarre, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Fournisseur {
+  id           String   @id @default(uuid())
+  mails        String
+  fixedTel     String
+  mobileTel    String
+  denomination String   @unique
+  matricule    String
+  secteur      String
+  rib          String
+  addresses    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+  entrepriseId String
+
+  @@unique([denomination, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  nom       String
+  prenom    String
+  cin       Int
+  email     String?
+  address   String?
+  tel       String   @unique
+  credit    Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [syncId])
+  entrepriseId String
+
+  @@unique([tel, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model ClotureJour {
+  id                       Int      @id @default(autoincrement())
+  dateFermeture            DateTime
+  heureFermeture           String?
+  caissierResponsable      String
+  chiffreAffaires          Float    @default(0)
+  totalEncaissements       Float    @default(0)
+  totalAchat               Float    @default(0)
+  totalCharge              Float    @default(0)
+  totalAcc                 Float    @default(0)
+  totalRemises             Float    @default(0)
+  totalRetours             Float    @default(0)
+  totalNet                 Float    @default(0)
+  nombreVentes             Int      @default(0)
+  tvaCollecte              Float    @default(0)
+  fondCaisseInitial        Float    @default(0)
+  totalEspecesEncaissées  Float    @default(0)
+  totalEspecesSorties      Float    @default(0)
+  totalEspecesEntree       Float    @default(0)
+  totalEspecesFinalAttendu Float    @default(0)
+  statut                   String   @default("TERMINEE")
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  ventesCaissiers VenteCaissierCloture[]
+  detailPaiements DetailPaiementCloture[]
+
+  @@index([dateFermeture])
+  @@index([caissierResponsable])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model VenteCaissierCloture {
+  id                 Int    @id @default(autoincrement())
+  clotureId          String
+  nomCaissier        String
+  nombreVentes       Int    @default(0)
+  montantTotal       Float  @default(0)
+  totalRetours       Float  @default(0)
+  fondCaisse         Float  @default(0)
+  totalRemises       Float  @default(0)
+  totalNet           Float  @default(0)
+  totalEncaissements Float  @default(0)
+  paiementsEspeces   Float  @default(0)
+  paiementsCarte     Float  @default(0)
+  paiementsCheque    Float  @default(0)
+  paiementsTicket    Float  @default(0)
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  cloture ClotureJour @relation(fields: [clotureId], references: [syncId], onDelete: Cascade)
+
+  @@index([clotureId])
+  @@index([nomCaissier])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model DetailPaiementCloture {
+  id           Int    @id @default(autoincrement())
+  clotureId    String
+  typePaiement String
+  montant      Float  @default(0)
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  cloture ClotureJour @relation(fields: [clotureId], references: [syncId], onDelete: Cascade)
+
+  @@index([clotureId])
+  @@index([typePaiement])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+model Paiement {
+  id           String  @id @default(uuid())
+  type         String
+  montant      Decimal
+  venteId      String
+  commandeId   String?
+  entrepriseId String // <-- nouveau champ
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  vente      Vente      @relation(fields: [venteId], references: [syncId], onDelete: Cascade)
+  commande   Commande?  @relation(fields: [commandeId], references: [syncId])
+  entreprise Entreprise @relation(fields: [entrepriseId], references: [id]) // <-- relation vers Entreprise
+
+  @@index([venteId])
+  @@index([commandeId])
+  @@index([entrepriseId])
+  @@index([type])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+}
+
+enum ProductType {
+  POS
+  MAGASIN
+}
+
+model Produit {
+  id                String      @id @default(uuid())
+  codeBarre         String      @unique
+  designation       String
+  parentId          String?
+  categorieId       String
+  puht              Decimal
+  tva               Decimal     @default(0)
+  remise            Decimal     @default(0)
+  dateDebutRemise   DateTime?
+  dateFinRemise     DateTime?
+  stockInitial      Float
+  quantite          Float       @default(1)
+  stockSecurite     Float?
+  featuredOnPos     Boolean     @default(false)
+  active            Boolean     @default(true)
+  isDefaultOperator Boolean     @default(false)
+  type              ProductType @default(MAGASIN)
+  imagePath         String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  parent          Produit?         @relation("ProductParent", fields: [parentId], references: [syncId])
+  children        Produit[]        @relation("ProductParent")
+  categorie       Categorie        @relation(fields: [categorieId], references: [syncId], onDelete: Restrict)
+  entrepriseId    String
+  entreprise      Entreprise       @relation(fields: [entrepriseId], references: [syncId])
+  magasinProduits MagasinProduit[]
+  Lot             Lot[]
+  variants        ProductVariant[]
+
+  @@unique([codeBarre, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+  @@map("produits")
+}
+
+model VariantFamily {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  code        String   @unique
+  isRequired  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  values VariantValue[]
+
+  @@unique([name, caisseId])
+  @@unique([code, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+  @@map("variant_families")
+}
+
+model VariantValue {
+  id              Int      @id @default(autoincrement())
+  value           String
+  sortOrder       Int      @default(0)
+  variantFamilyId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  variantFamily   VariantFamily?   @relation(fields: [variantFamilyId], references: [syncId], onDelete: Cascade)
+  productVariants ProductVariant[] @relation("variant_values")
+
+  @@unique([variantFamilyId, value, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+  @@map("variant_values")
+}
+
+model ProductVariant {
+  id              Int      @id @default(autoincrement())
+  productId       String
+  sku             String?  @unique
+  name            String?
+  priceAdjustment Float    @default(0)
+  costAdjustment  Float    @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  product Produit               @relation(fields: [productId], references: [syncId], onDelete: Cascade)
+  values  VariantValue[]        @relation("variant_values")
+  stocks  ProductVariantStock[]
+
+  @@unique([sku, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+  @@map("product_variants")
+}
+
+model ProductVariantStock {
+  id               Int      @id @default(autoincrement())
+  productVariantId String // doit correspondre au type de ProductVariant.syncId
+  magasinId        String
+  quantity         Int      @default(0)
+  minStock         Int      @default(0)
+  maxStock         Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  // CORRECTION : utiliser le champ réel productVariantId
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [syncId], onDelete: Cascade)
+  magasin        Magasin        @relation(fields: [magasinId], references: [syncId])
+
+  // CORRECTION : remplacer String par productVariantId
+  @@unique([productVariantId, magasinId, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+  @@map("product_variant_stocks")
+}
+
+model RemiseQRConfig {
+  id            String   @id @default(uuid())
+  entrepriseId  String
+  pourcentage   Float
+  joursValidite Int
+  isActive      Boolean  @default(true)
+  message       String?  @default("Revenez prochainement pour bénéficier d'une remise!")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  entreprise    Entreprise       @relation(fields: [entrepriseId], references: [syncId], onDelete: Cascade)
+  ticketsRemise TicketRemiseQR[]
+
+  @@unique([entrepriseId, isActive, caisseId])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+  @@map("remise_qr_configs")
+}
+
+model TicketRemiseQR {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  configId        String
+  venteId         String?
+  pourcentage     Float
+  dateExpiration  DateTime
+  dateUtilisation DateTime?
+  isUsed          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  syncId      String?  @unique @map("sync_id")
+  localId     String?  @map("local_id")
+  caisseId    String   @map("caisse_id")
+  lastUpdated DateTime @default(now()) @map("last_updated")
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  config RemiseQRConfig @relation(fields: [configId], references: [syncId], onDelete: Cascade)
+  vente  Vente?         @relation(fields: [venteId], references: [syncId], onDelete: SetNull)
+
+  @@unique([code, caisseId])
+  @@index([code])
+  @@index([venteId])
+  @@index([dateExpiration])
+  @@index([isUsed])
+  @@index([syncId])
+  @@index([localId])
+  @@index([caisseId])
+  @@index([lastUpdated])
+  @@map("ticket_remise_qr")
+}
+
+model SyncConflict {
+  id         String    @id @default(uuid())
+  caisseId   String    @map("caisse_id")
+  tableName  String    @map("table_name")
+  recordId   String    @map("record_id")
+  localData  Json      @map("local_data")
+  serverData Json      @map("server_data")
+  resolution String? // CLIENT_WINS, SERVER_WINS, MERGED
+  resolvedAt DateTime? @map("resolved_at")
+  resolvedBy String?   @map("resolved_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([caisseId])
+  @@index([tableName, recordId])
+  @@index([resolution])
+}
+
+model SyncLog {
+  id        String   @id @default(uuid())
+  caisseId  String   @map("caisse_id")
+  operation String // PUSH, PULL, CONFLICT_RESOLUTION
+  tableName String   @map("table_name")
+  recordId  String   @map("record_id")
+  status    String // SUCCESS, ERROR, CONFLICT
+  details   Json?
+  error     String?
+  timestamp DateTime @default(now())
+
+  @@index([caisseId])
+  @@index([timestamp])
+  @@index([tableName])
+}
+model Caisse {
+  id          String   @id @default(uuid())
+  name        String
+  ip          String
+  port        Int      @default(3000)
+  macAddress  String?
+  status      String   @default("offline")
+  lastSync    DateTime?
+  isActive    Boolean  @default(true)
+  isCentral   Boolean  @default(false)
+  version     String?
+  storeId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([ip, port])
+  @@index([status])
+  @@index([isCentral])
+}

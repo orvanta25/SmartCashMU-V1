@@ -63,7 +63,12 @@ import VariantFamilyForm from './components/dashboard_user_pages/variant/Variant
 import VariantFamilyList from './components/dashboard_user_pages/variant/VariantFamilyList'
 import VariantValueForm from './components/dashboard_user_pages/variant/VariantValueForm'
 import VariantValueList from './components/dashboard_user_pages/variant/VariantValueList'
+import GestionCaisses from './components/dashboard_user_pages/configuration/caisse/caisse'
 import { RemiseConfiguration } from './components/dashboard_user/PaymentRemise/RemiseConfiguration'
+
+
+
+
 function App(): React.JSX.Element {
 
   return (
@@ -141,6 +146,7 @@ function App(): React.JSX.Element {
           <Route path='TicketResto/list' element={<TicketRestoListPage/>}/>
           
           {/*configuration */}
+          <Route path='configuration/caisses' element={<GestionCaisses />} />
           <Route path='configuration/balance' element={<BalanceSettingsPage/>}/>
           <Route path='configuration/balance/list' element={<BalanceConfigListPage/>}/>
           <Route path='configuration/imprimante' element={<ImprimantePage/>}/>
